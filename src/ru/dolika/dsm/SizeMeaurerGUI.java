@@ -8,6 +8,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,24 +78,38 @@ public class SizeMeaurerGUI {
 					}
 				});
 				scrollPane.doLayout();
+
 				fc.addActionListener(evt -> {
 					if ("SizeSelection".equals(evt.getActionCommand())) {
 						final File file = fc.getSelectedFile();
 						System.out.println("Sizing file: " + file);
 						if (file != null && file.exists()) {
 							listModel.clear();
+
+							try {
+								String fname = file.getCanonicalPath().trim();
+								listModel
+										.addElement("Computing size in " + (fname.length() > 12 ? "..." : "")
+												+ fname.substring(Math.max(0, fname.length() - 12), fname.length()));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
 							System.out.println("YOYOYO" + file.getName());
 							new Thread(() -> {
 								Arrays
 										.asList(file.listFiles())
 										.stream()
-										.map(f -> new Node<File, Long>(f, calculateSize(f)))
+										.map(f -> new Node<>(f, calculateSize(f)))
 										.sorted()
 										.forEachOrdered(el -> SwingUtilities
-												.invokeLater(() -> listModel.addElement(String.format("%-20s | %10s",
-														el.key.getName().substring(0,
-																Math.min(el.key.getName().length(), 20)),
-														sizeToString(el.value)))));
+												.invokeLater(() -> listModel
+														.addElement(String
+																.format("%-20s | %10s", el.key
+																		.getName()
+																		.substring(0, Math
+																				.min(el.key.getName().length(), 20)),
+																		sizeToString(el.value)))));
 								SwingUtilities.invokeLater(() -> {
 									scrollPane.invalidate();
 									scrollPane.validate();
@@ -123,11 +138,11 @@ public class SizeMeaurerGUI {
 
 	public static String sizeToString(long size) {
 		if (size > 1024L * 1024L * 1024L) {
-			return String.format("%.2f Гб", (float) size / 1024f / 1024f / 1024f);
+			return String.format("%.2f Гб", size / 1024f / 1024f / 1024f);
 		} else if (size > 1024L * 1024L) {
-			return String.format("%.2f Мб", (float) size / 1024f / 1024f);
+			return String.format("%.2f Мб", size / 1024f / 1024f);
 		} else if (size > 1024) {
-			return String.format("%.2f кб", (float) size / 1024f);
+			return String.format("%.2f кб", size / 1024f);
 		}
 		return size + " б";
 
